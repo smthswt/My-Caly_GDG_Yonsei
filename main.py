@@ -1,3 +1,5 @@
+import json
+
 from fastapi import FastAPI, Depends, HTTPException, APIRouter
 from sqlalchemy.orm import Session
 from typing import List
@@ -77,9 +79,9 @@ def send_push_notification_v1(token: str, title: str, body: str):
 
     return {"message": "Notification sent successfully!"}
 
-# 매일 오전 9시 푸시 알림
+# 매일 오전 9시 푸시 알림 --> 이 부분 내용을 크롤링 날짜에 맞게 내용 보내면 되겠다.
 def send_daily_notification():
-    token = "CLIENT_FCM_TOKEN"  # 실제 토큰 가져오기
+    token = "CLIENT_FCM_TOKEN"  # 실제 토큰 가져오기 -> 데이터베이스에서 토큰값있는 회원만 보내기
     send_push_notification_v1(token, "Daily Reminder", "This is your daily notification.")
 
 # OAuth2PasswordBearer 설정
@@ -213,7 +215,12 @@ def read_user_details(username: str, db: Session = Depends(get_db)):
 
 # 단과대 및 관심_tags 추가/수정 -> 둘 다/개별 다 가능, None일 경우 추가, 이미 값이 있을 경우 수정
 @user_query_router.put("/{username}/details", response_model=UserResponse)
-def update_user_details(username: str, college: Optional[str] = None, interested_tags: Optional[str] = None, db: Session = Depends(get_db)):
+def update_user_details(
+    username: str,
+    college: Optional[str] = None,
+    interested_tags: Optional[List[str]] = None,  # List[str]로 입력 받음
+    db: Session = Depends(get_db),
+):
     # 사용자 조회
     user = db.query(UserTable).filter(UserTable.username == username).first()
     if not user:
@@ -221,9 +228,11 @@ def update_user_details(username: str, college: Optional[str] = None, interested
 
     # 값 추가/수정
     if college is not None:
-        user.college = college if college else user.college
+        user.college = college
+
     if interested_tags is not None:
-        user.interested_tags = interested_tags if interested_tags else user.interested_tags
+        # List[str] -> JSON 문자열 변환
+        user.interested_tags = json.dumps(interested_tags)
 
     db.commit()
     db.refresh(user)
