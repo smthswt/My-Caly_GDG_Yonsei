@@ -37,7 +37,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # FCM 설정
-FCM_SERVICE_ACCOUNT_KEY = "/key/my-caly-yonsei-firebase-adminsdk-3dz0d-41f1f65b74.json"
+FCM_SERVICE_ACCOUNT_KEY = "./key/my-caly-yonsei-firebase-adminsdk-3dz0d-87e58acd17.json"
 FCM_ENDPOINT = "https://fcm.googleapis.com/v1/projects/my-caly-yonsei/messages:send"
 
 # APScheduler
@@ -80,9 +80,61 @@ def send_push_notification_v1(token: str, title: str, body: str):
     return {"message": "Notification sent successfully!"}
 
 # 매일 오전 9시 푸시 알림 --> 이 부분 내용을 크롤링 날짜에 맞게 내용 보내면 되겠다.
+# def send_daily_notification():
+#     db: Session = next(get_db())  # 데이터베이스 세션 가져오기
+#     users_with_tokens = db.query(UserTable).filter(UserTable.fcm_token.isnot(None)).all()  # fcm_token이 NULL이 아닌 사용자 조회
+#
+#     for user in users_with_tokens:
+#         try:
+#             send_push_notification_v1(user.fcm_token, "Daily Reminder", "오늘 끝나는 공지가 없습니다.")
+#             print(f"Notification sent to {user.username}")
+#         except Exception as e:
+#             print(f"Failed to send notification to {user.username}: {e}")
+
 def send_daily_notification():
-    token = "CLIENT_FCM_TOKEN"  # 실제 토큰 가져오기 -> 데이터베이스에서 토큰값있는 회원만 보내기
-    send_push_notification_v1(token, "Daily Reminder", "This is your daily notification.")
+    db: Session = next(get_db())  # 데이터베이스 세션 가져오기
+
+    # fcm_token이 NULL이 아닌 사용자 조회
+    users_with_tokens = db.query(UserTable).filter(UserTable.fcm_token.isnot(None)).all()
+
+    # API에서 데이터 가져오기
+    response = requests.get("http://my-caly-cralwer.duckdns.org/api/v1/query/posts/")
+    if response.status_code != 200:
+        print(f"Failed to fetch API data: {response.status_code}")
+        return
+
+    notices = response.json()  # JSON 데이터 파싱
+    today = datetime.now().strftime("%Y-%m-%d")  # 오늘 날짜 (YYYY-MM-DD 형식)
+
+    # 오늘 날짜와 일치하는 공지 필터링
+    notices_with_today_endAt = [
+        notice for notice in notices
+        if "endAt" in notice and notice["endAt"] and notice["endAt"].startswith(today)
+    ]
+
+    for user in users_with_tokens:
+        try:
+            if notices_with_today_endAt:
+                # 오늘 마감 공지가 있는 경우
+                for notice in notices_with_today_endAt:
+                    title = notice["title"]
+                    send_push_notification_v1(
+                        user.fcm_token,
+                        "Daily Reminder",
+                        f"오늘 끝나는 공지 - {title}"
+                    )
+                    print(f"Notification sent to {user.username} for notice: {title}")
+            else:
+                # 오늘 마감 공지가 없는 경우
+                send_push_notification_v1(
+                    user.fcm_token,
+                    "Daily Reminder",
+                    "오늘 끝나는 공지가 없습니다."
+                )
+                print(f"Notification sent to {user.username} with no ending notices.")
+        except Exception as e:
+            print(f"Failed to send notification to {user.username}: {e}")
+
 
 # OAuth2PasswordBearer 설정
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -248,6 +300,15 @@ notification_query_router = APIRouter(prefix="/api/notification", tags=["Push_No
 @notification_query_router.post("/test/send_notification/")
 async def send_notification(token: str, title: str, body: str):
     return send_push_notification_v1(token, title, body)
+
+@app.post("/api/daily_notification/test")
+async def trigger_daily_notification():
+    try:
+        send_daily_notification()
+        return {"message": "Daily notification triggered successfully"}
+    except Exception as e:
+        return {"error": f"Failed to trigger notification: {str(e)}"}
+
 
 # 클라이언트에서 생성한 토큰 및 device type 정보 저장, 알림 권한 동의시 토큰 생성하는걸로? 어느 타이밍에 추가하는게 좋으려나, 일단 회원가입이랑 분리하는게 좋다함. 유연성.
 @notification_query_router.put("/register_token")
