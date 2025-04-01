@@ -23,6 +23,13 @@ For Android User
 |---|---|---|
 |<img src="https://github.com/user-attachments/assets/a6968f05-60fb-4347-9390-5cdc4110a2be" width="300">|<img src="https://github.com/user-attachments/assets/05d6cce3-4052-46ee-8549-478fccb3c512" width="300">|<img src="https://github.com/user-attachments/assets/9fc7b422-ade9-4665-8266-5a63bbf37925" width="300">|
 
+## 📲 System Architecture
+<img width="1481" alt="image" src="https://github.com/user-attachments/assets/c3160314-ca33-4c08-a744-27031fb1979b" />
+<img width="1216" alt="image" src="https://github.com/user-attachments/assets/f471fb67-9db8-4026-a688-3bea83ec2244" />
+<img width="1254" alt="image" src="https://github.com/user-attachments/assets/0390cc7f-a760-49d7-ba22-69a3f1a37482" />
+
+
+
 ## 🧬 Tech Dependences
 1. Network : Dio
 2. Route Management: GetX
