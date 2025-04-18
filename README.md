@@ -40,6 +40,6 @@ For Android User
 
 ## 👥 About Us
 
-|개발|김승유(ML), 김현호(Backend), 이혜민(Mobile), 최서연(DevRel)|
+|기획 및 개발|김승유(ML), 김현호(Backend), 이혜민(Mobile), 최서연(DevRel)|
 |---|---|
 |제작 기간|11.11 - 12.4 (4주)|
